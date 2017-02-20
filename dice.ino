@@ -41,6 +41,7 @@ const byte PIPS[] = {
   0b01001101,
   0b01101101,
   0b00111111,
+  0b01111111,
 };
 
 #define OFF -1
@@ -116,9 +117,11 @@ void light_die(int val) {
   }
 
   clear_die();
+}
 
-
-  
+void test_die() {
+  // Test all the LEDs on the die
+  light_die(7); 
 }
 
 
@@ -140,6 +143,10 @@ void setup() {
   // Configure the two pins
   pinMode(UP_PIN, INPUT_PULLUP);
   pinMode(DOWN_PIN, INPUT_PULLUP);
+
+  // Test the die
+  test_die();
+  delay(1000);
 }
 
 void loop() {
