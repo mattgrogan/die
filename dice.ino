@@ -2,13 +2,15 @@
  * This code is to build a single die with two tilt switches, six LEDs, and an ATTINY45.
  */
 
+// Orientation constants
 const int UP = 1;
 const int DOWN = 2;
 
-// Tilt sensors
+// Tilt sensor pins
 const int UP_PIN = 3;
 const int DOWN_PIN = 2;
 
+// Charliplexed LED Pins
 #define P1 8
 #define P2 9
 #define P3 10
@@ -19,11 +21,14 @@ const int pins[4] = {P1, P2, P3, P4};
 // How many LEDs are there?
 #define NUMPIPS 7
 
-// Delay for charliplex
+// Delay for charliplex. Cycles * delay is the 
+// amount of time the value will show.
 #define DELAY 1
+#define CYCLES 1000
 
 // Delay between number display
 #define PAUSE 100
+
 
 // Which pips are lit for each die roll 1..6?
 /*
@@ -97,12 +102,12 @@ void clear_die() {
   }
 }
 
-void light_die(int val) {
+void light_die(int val, int cycles=CYCLES) {
   // Light multiple pips for a die value
 
   byte pip_map = PIPS[val - 1];
 
-  for (int j = 0; j < 1000; j++) {
+  for (int j = 0; j < cycles; j++) {
     for (int pip = 0; pip < NUMPIPS; pip++) {
 
       // Shift the bit mask
@@ -110,20 +115,14 @@ void light_die(int val) {
       
       if ((pip_map & mask) == mask) {
         light_pip(pip + 1);
-        delay(DELAY);
       }
+      delay(DELAY);
     }
     
   }
 
   clear_die();
 }
-
-void test_die() {
-  // Test all the LEDs on the die
-  light_die(7); 
-}
-
 
 int old_state = 0;
 
@@ -140,17 +139,24 @@ void setup() {
   Serial.begin(9600);
   randomSeed(analogRead(0));
 
+  // Blink all LEDs three times
+  for (int i=0; i < 3; i++) {
+    light_die(7, 50);
+    delay(75);
+  }
+
   // Configure the two pins
   pinMode(UP_PIN, INPUT_PULLUP);
   pinMode(DOWN_PIN, INPUT_PULLUP);
 
-  // Test the die
-  test_die();
-  delay(1000);
+  // Add interrupts to call any time the pin values change
+  // Using interrupts to help save some power
+  attachInterrupt(digitalPinToInterrupt(UP_PIN), check_state, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(UP_PIN), check_state, CHANGE);  
 }
 
-void loop() {
-
+void check_state() {
+  
   // Obtain the new state from the pins
   int new_state = read_orientation();
 
@@ -169,8 +175,10 @@ void loop() {
     }
     old_state = new_state;
   }
+}
 
-  delay(100);
+void loop() {
+  // Nothing to do
 }
 
 
