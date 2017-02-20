@@ -7,14 +7,14 @@ const int UP = 1;
 const int DOWN = 2;
 
 // Tilt sensor pins
-const int UP_PIN = 3;
-const int DOWN_PIN = 2;
+const int UP_PIN = 0;
+const int DOWN_PIN = 1;
 
 // Charliplexed LED Pins
-#define P1 8
-#define P2 9
-#define P3 10
-#define P4 11
+#define P1 2
+#define P2 3
+#define P3 4
+#define P4 5
 
 const int pins[4] = {P1, P2, P3, P4};
 
@@ -136,7 +136,7 @@ int read_orientation() {
 
 void setup() {
   //start serial connection
-  Serial.begin(9600);
+  //Serial.begin(9600);
   randomSeed(analogRead(0));
 
   // Blink all LEDs three times
