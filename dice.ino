@@ -2,11 +2,13 @@
  * This code is to build a single die with two tilt switches, six LEDs, and an ATTINY45.
  */
 
+#include <avr/interrupt.h>
+
 // Tilt sensor pin
-#define UP_PIN 6
+#define TILT_PIN 0
 
 // Charliplexed LED Pins
-#define P1 5
+#define P1 1
 #define P2 2
 #define P3 3
 #define P4 4
@@ -18,7 +20,7 @@ const int pins[4] = {P1, P2, P3, P4};
 
 // Delay for charliplex. Cycles * delay is the 
 // amount of time the value will show.
-#define DELAY 1
+#define DELAY 0
 #define CYCLES 1000
 
 // Which pips are lit for each die roll 1..6?
@@ -30,15 +32,6 @@ const int pins[4] = {P1, P2, P3, P4};
  *    ---------
  * 
  */
-const byte PIPS[] = {
-  0b01000000, // one
-  0b00010010, // two
-  0b01100001, // three
-  0b00101101, // four
-  0b01101101, // five
-  0b00111111, // six
-  0b01111111, // seven
-};
 
 #define OFF -1
 const int pin_map[][4] = {
@@ -52,7 +45,20 @@ const int pin_map[][4] = {
   {OFF, LOW, HIGH, OFF}  // seven
 };
 
+// Which pips are lit for each die roll?
+const byte PIPS[] = {
+  0b01000000, // one
+  0b00010010, // two
+  0b01100001, // three
+  0b00101101, // four
+  0b01101101, // five
+  0b00111111, // six
+  0b01111111, // seven
+};
+
+
 void clear_pins() {
+  // Reset all pins
   for (int pid = 0; pid < 4; pid++) {
     
      // Look up the pin number in the array
@@ -65,6 +71,8 @@ void clear_pins() {
 
 void light_pip(int pip) {
   // Light a single pip on the die
+
+  clear_pins();
 
   for (int pid = 0; pid < 4; pid++) {
 
@@ -90,22 +98,6 @@ void light_pip(int pip) {
   }
 }
 
-/*
-void clear_die() {
-  // Turn off all pips
-  for (int pip = 0; pip < NUMPIPS; pip++) {
-    for (int pid = 0; pid < 4; pid++) {
-  
- 
-      // Look up the pin number in the array
-      int pin = pins[pid];
-      digitalWrite(pin, LOW);
-      pinMode(pin, INPUT);
-    }
-  }
-}
-*/
-
 void light_die(int val, int cycles=CYCLES) {
   // Light multiple pips for a die value
 
@@ -130,62 +122,61 @@ void light_die(int val, int cycles=CYCLES) {
   clear_pins();
 }
 
-int old_state = 0;
-
-void setup() {
-  //start serial connection
-  Serial.begin(9600);
-  //randomSeed(analogRead(0));
-
+void cycle_pips() {
   // Light each pip in sequence
   for (int p = 1; p <= 7; p++) {
     light_pip(p);
-    delay(250); 
+    delay(100); 
   }
+}
 
+void cycle_vals() {
   // Light each die value in sequence
   for (int d = 1; d <= 6; d++) {
     clear_pins();
     delay(100);
-    light_die(d, 100);
-  }
+    light_die(d, 50);
+  }  
+}
 
-  // Blink all LEDs three times
-  for (int i=0; i < 3; i++) {
+void blink_all(int n) {
+  // Blink all LEDs n times
+  for (int i=0; i < n; i++) {
     clear_pins();
     delay(100);
     light_die(7, 100);
     delay(100);
   }
-
-  // Configure the two pins
-  pinMode(UP_PIN, INPUT);
-
-  // Add interrupts to call any time the pin values change
-  // Using interrupts to help save some power
-  //attachInterrupt(digitalPinToInterrupt(UP_PIN), check_state, CHANGE);
-  //attachInterrupt(digitalPinToInterrupt(DOWN_PIN), check_state, CHANGE);  
 }
 
-void check_state() {
-  
-  // Obtain the new state from the pins
-  int new_state = digitalRead(UP_PIN);
+void setup() {
+  //randomSeed(analogRead(0));
 
-  if (new_state != old_state) {
+  cycle_pips();
+  delay(100);
+  cycle_vals();
 
-    if (new_state) {
-      light_die(random(1, 7));
-    }
+  // Configure the input pin
+  pinMode(TILT_PIN, INPUT);
 
-    old_state = new_state;
-  }
+  // Using interrupts to help save some power
+  // Using interrupt example from:
+  // https://thewanderingengineer.com/2014/08/11/pin-change-interrupts-on-attiny85/
+
+  GIMSK = 0b00100000;
+  PCMSK = 0b00000001;
+  sei();
+}
+
+ISR(PCINT0_vect) {
+  cli(); // stop listening
+  light_die(random(1, 7));
+  delay(100);
+  sei(); // start listening
 }
 
 void loop() {
-  //light_die(random(1, 7));
-  check_state();
-  delay(100);
+  // Nothing to do 
   
 }
 
