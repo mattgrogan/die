@@ -1,5 +1,5 @@
 /*
- * This code is to build a single die with two tilt switches, six LEDs, and an ATTINY45.
+ * This code is to build a single die with a tilt switch, seven LEDs, and an ATTINY45.
  */
 
 #include <avr/interrupt.h>
