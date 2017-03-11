@@ -3,6 +3,7 @@
  */
 
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 // Tilt sensor pin
 #define TILT_PIN 0
@@ -198,9 +199,17 @@ void loop() {
 
     // Wait for the next roll
     state = ROLL_WAITING;
-    
   }
 
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  cli();
+  if (state != ROLL_TRIGGERED) {
+    sleep_enable();
+    sei();
+    sleep_cpu();
+    sleep_disable();
+  }
+  sei();
 }
 
 
