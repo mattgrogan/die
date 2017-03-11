@@ -12,7 +12,6 @@
 #define P2 2
 #define P3 3
 #define P4 4
-
 const int pins[4] = {P1, P2, P3, P4};
 
 // How many LEDs are there?
@@ -56,6 +55,13 @@ const byte PIPS[] = {
   0b01111111, // seven
 };
 
+//State definitions
+#define ROLL_DISABLED     0
+#define ROLL_WAITING      1
+#define ROLL_TRIGGERED    2
+
+//State variable
+volatile uint8_t state;
 
 void clear_pins() {
   // Reset all pins
@@ -150,7 +156,8 @@ void blink_all(int n) {
 }
 
 void setup() {
-  //randomSeed(analogRead(0));
+  
+  randomSeed(micros);
 
   cycle_pips();
   delay(100);
@@ -158,6 +165,9 @@ void setup() {
 
   // Configure the input pin
   pinMode(TILT_PIN, INPUT);
+
+  // Start with the state enabled
+  state = ROLL_WAITING;
 
   // Using interrupts to help save some power
   // Using interrupt example from:
@@ -169,15 +179,28 @@ void setup() {
 }
 
 ISR(PCINT0_vect) {
-  cli(); // stop listening
-  light_die(random(1, 7));
-  delay(100);
-  sei(); // start listening
+  // set the roll boolean to true, so it will
+  // be picked up on the next loop.
+
+  if (state == ROLL_WAITING) {
+    state = ROLL_TRIGGERED;
+  }
 }
 
 void loop() {
-  // Nothing to do 
-  
+
+  if (state == ROLL_TRIGGERED) {
+    // Clear the state
+    state = ROLL_DISABLED;
+
+    light_die(random(1, 7));
+    delay(100);
+
+    // Wait for the next roll
+    state = ROLL_WAITING;
+    
+  }
+
 }
 
 
