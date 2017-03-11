@@ -205,6 +205,7 @@ void loop() {
   cli();
   if (state != ROLL_TRIGGERED) {
     sleep_enable();
+    sleep_bod_disable();
     sei();
     sleep_cpu();
     sleep_disable();
